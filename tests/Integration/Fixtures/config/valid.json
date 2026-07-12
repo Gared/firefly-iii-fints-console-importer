@@ -1,0 +1,17 @@
+{
+  "bank_username": "myuser",
+  "bank_password": "password$$",
+  "bank_code": "12030000",
+  "bank_url": "https://fints.dkb.de/fints",
+  "bank_2fa": "NoPsd2TanMode",
+  "bank_2fa_device": "",
+  "firefly_url": "https://firefly.example.com",
+  "firefly_access_token": "TOKEN",
+  "choose_account_automation":
+  {
+    "bank_account_iban": "",
+    "firefly_account_id": "1",
+    "from": "now - 2 days",
+    "to": "now"
+  }
+}

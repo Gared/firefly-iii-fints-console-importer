@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Gared\FireflyImporter\Console\GenerateConfigCommand;
+use Gared\FireflyImporter\Console\ImportTransactionsCommand;
+use Gared\FireflyImporter\Console\ValidateConfigCommand;
+use Symfony\Component\Console\Application;
+
+$application = new Application();
+$application->addCommands([
+    new ImportTransactionsCommand(),
+    new GenerateConfigCommand(),
+    new ValidateConfigCommand(),
+]);
+$application->run();

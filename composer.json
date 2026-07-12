@@ -1,0 +1,60 @@
+{
+  "name": "gared/firefly-iii-fints-console-importer",
+  "type": "project",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Gared\\FireflyImporter\\": "src/"
+    },
+    "autoload-dev": {
+      "psr-4": {
+        "Tests\\": "tests/"
+      }
+    }
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "php": "^8.5",
+    "symfony/console": "^8.1",
+    "nemiah/php-fints": "^4.1",
+    "symfony/http-client": "^8.1",
+    "symfony/validator": "^8.1",
+    "ext-ctype": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.2",
+    "phpunit/phpunit": "^13.2",
+    "friendsofphp/php-cs-fixer": "^3.95",
+    "gared/polyless": "^0.4.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "gared/polyless": true
+    }
+  },
+  "replace": {
+    "symfony/polyfill-ctype": "*",
+    "symfony/polyfill-intl-grapheme": "*",
+    "symfony/polyfill-intl-icu": "*",
+    "symfony/polyfill-intl-idn": "*",
+    "symfony/polyfill-intl-messageformatter": "*",
+    "symfony/polyfill-intl-normalizer": "*",
+    "symfony/polyfill-mbstring": "*",
+    "symfony/polyfill-php54": "*",
+    "symfony/polyfill-php55": "*",
+    "symfony/polyfill-php56": "*",
+    "symfony/polyfill-php70": "*",
+    "symfony/polyfill-php71": "*",
+    "symfony/polyfill-php72": "*",
+    "symfony/polyfill-php73": "*",
+    "symfony/polyfill-php74": "*",
+    "symfony/polyfill-php80": "*",
+    "symfony/polyfill-php81": "*",
+    "symfony/polyfill-php82": "*",
+    "symfony/polyfill-php83": "*",
+    "symfony/polyfill-php84": "*",
+    "symfony/polyfill-php85": "*"
+  }
+}
