@@ -1,0 +1,76 @@
+name: Build & Publish Docker image
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "8.5"
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Validate composer.json and composer.lock
+      run: composer validate --strict
+
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+
+    - name: Install dependencies
+      uses: ramsey/composer-install@v4
+
+    - name: Run php-cs-fixer check
+      run: vendor/bin/php-cs-fixer check --diff
+
+    - name: Run PHPStan
+      run: vendor/bin/phpstan
+
+    - name: Run PHPUnit
+      run: vendor/bin/phpunit
+
+  publish:
+    name: Push Docker image to Docker Hub
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v7
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: gared/firefly-iii-fints-console-importer
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

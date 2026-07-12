@@ -3,6 +3,7 @@ services:
     build:
       dockerfile: docker/Dockerfile
       context: .
+      target: development
     volumes:
       - .:/app
     tty: true

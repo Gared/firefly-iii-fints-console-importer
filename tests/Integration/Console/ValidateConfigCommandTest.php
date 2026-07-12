@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Integration\Console;
+namespace Tests\Integration\Console;
 
 use Gared\FireflyImporter\Config\Exception\InvalidConfigurationException;
 use Gared\FireflyImporter\Console\ValidateConfigCommand;
