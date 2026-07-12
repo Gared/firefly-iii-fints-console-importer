@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Unit\Config\Parser;
+namespace Tests\Unit\Config\Parser;
 
 use DateTimeImmutable;
 use Gared\FireflyImporter\Config\Exception\InvalidConfigurationException;

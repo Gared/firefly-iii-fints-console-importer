@@ -1,15 +1,16 @@
 {
   "name": "gared/firefly-iii-fints-console-importer",
+  "description": "A console application to import FinTS transactions into Firefly III",
   "type": "project",
   "license": "MIT",
   "autoload": {
     "psr-4": {
       "Gared\\FireflyImporter\\": "src/"
-    },
-    "autoload-dev": {
-      "psr-4": {
-        "Tests\\": "tests/"
-      }
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
     }
   },
   "minimum-stability": "stable",
