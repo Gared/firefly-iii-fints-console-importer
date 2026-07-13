@@ -104,22 +104,20 @@ class ImportTransactionsCommand extends Command
                     $transaction->getCreditDebit(),
                 ]);
 
-                $fireflyTransaction = $transactionMapper->mapFromBankTransaction($transaction, $config->account);
-                if (array_key_exists($fireflyTransaction->type, $fireflyTransactions) === false) {
-                    $fireflyTransactions[$fireflyTransaction->type] = [];
-                }
-                $fireflyTransactions[$fireflyTransaction->type][] = $fireflyTransaction;
+                $fireflyTransactions[] = $transactionMapper->mapFromBankTransaction($transaction, $config->account);
             }
         }
         $table->render();
 
-        foreach ($fireflyTransactions as $type => $transactions) {
-            $io->info('Sending transaction with type [' . $type . '] to firefly');
+        $io->info('Sending [' . count($fireflyTransactions) . '] transactions');
+        $successCount = 0;
+        foreach ($fireflyTransactions as $transaction) {
             try {
                 $fireflyClient->postTransactions(new CreateTransactionRequest(
-                    transactions: $transactions,
+                    transactions: [$transaction],
                 ));
-                $io->success('Successfully sent ' . count($transactions) . ' transactions');
+                $successCount++;
+                $io->success('Successfully sent transaction');
             } catch (FailedException $exception) {
                 $io->error($exception->getMessage());
                 foreach ($exception->errors as $errorType => $message) {
@@ -127,6 +125,8 @@ class ImportTransactionsCommand extends Command
                 }
             }
         }
+
+        $io->info('Sent firefly transactions: ' . $successCount . '/' . count($fireflyTransactions) . ' successful');
 
         return self::SUCCESS;
     }
