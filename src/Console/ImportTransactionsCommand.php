@@ -91,7 +91,7 @@ class ImportTransactionsCommand extends Command
 
         $table = new Table($output);
 
-        $table->setHeaders(['Amount', 'Booking Text', 'Credit/Debit']);
+        $table->setHeaders(['Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
 
         $transactionMapper = new TransactionMapper();
 
@@ -99,9 +99,11 @@ class ImportTransactionsCommand extends Command
         foreach ($statementAccount->getStatements() as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
                 $table->addRow([
+                    $transaction->getCreditDebit(),
                     $transaction->getAmount(),
                     $transaction->getMainDescription(),
-                    $transaction->getCreditDebit(),
+                    $transaction->getAccountNumber(),
+                    $transaction->getName(),
                 ]);
 
                 $fireflyTransactions[] = $transactionMapper->mapFromBankTransaction($transaction, $config->account);

@@ -50,8 +50,7 @@ class TanModeHandler
             sleep($tanMode->getFirstDecoupledCheckDelaySeconds());
             for ($attempt = 0;
                 $tanMode->getMaxDecoupledChecks() === 0 || $attempt < $tanMode->getMaxDecoupledChecks();
-                ++$attempt
-            ) {
+                $attempt++) {
                 $io->info('Checking if decoupled authentication is complete...');
                 if ($finTs->checkDecoupledSubmission($action)) {
                     return;
