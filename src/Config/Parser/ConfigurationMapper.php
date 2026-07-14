@@ -69,6 +69,10 @@ class ConfigurationMapper
             throw new InvalidConfigurationException('Missing key: ' . $key);
         }
 
+        if (is_int($data[$key])) {
+            return (string) $data[$key];
+        }
+
         if (!is_string($data[$key])) {
             throw new InvalidConfigurationException('Invalid type for key: ' . $key . '. Expected string.');
         }
