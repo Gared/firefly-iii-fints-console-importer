@@ -88,4 +88,4 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: peterevans/dockerhub-description
+          repository: gared/firefly-iii-fints-console-importer
