@@ -17,7 +17,9 @@ You need PHP 8.5 or higher to run this tool.
 
 ### 1. Generate a configuration file
 
-Before you can run the importer, you need to generate a configuration file for your bank account. Run the interactive setup wizard:
+Before you can run the importer, you need to generate a configuration file for your bank account.
+This will also create a state file to persist the FinTS session state (which is required to run the importer).
+Run the interactive setup wizard:
 
 ```bash
 bin/console config:generate
@@ -51,18 +53,17 @@ bin/console import-transactions --config data/config/mybank.json
 
 ### Docker
 
-Build and run the application using Docker Compose:
+Run the application using the official Docker image:
 
 ```bash
-docker compose run --rm app bin/console config:generate
-docker compose run --rm app bin/console import-transactions --config data/config/mybank.json
+docker run --rm -v data_directory:/app/data/ gared/firefly-iii-fints-console-importer bin/console import-transactions --config data/config/mybank.json
 ```
 
 Or build the image manually:
 
 ```bash
 docker build -f docker/Dockerfile -t firefly-fints-importer .
-docker run --rm -v $(pwd):/app firefly-fints-importer bin/console import-transactions --config data/config/mybank.json
+docker run --rm -v $(pwd)/data:/app/data firefly-fints-importer bin/console import-transactions --config data/config/mybank.json
 ```
 
 ### Clone
@@ -127,7 +128,7 @@ vendor/bin/phpunit
 Run static analysis:
 
 ```bash
-vendor/bin/phpstan analyse
+vendor/bin/phpstan
 ```
 
 Run code style fixer:
