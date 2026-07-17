@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Gared\FireflyImporter\Firefly\Mapper;
 
+use DateTime;
 use DateTimeInterface;
 use Exception;
+use Fhp\Action\GetDepotAufstellung;
 use Fhp\Model\StatementOfAccount\Transaction;
 use Gared\FireflyImporter\Config\Parser\Account;
 use Gared\FireflyImporter\FinTS\StructuredDescriptionCodes;
@@ -47,6 +49,42 @@ class TransactionMapper
             sepaDb: $transaction->getStructuredDescription()[StructuredDescriptionCodes::Mandatsreferenznummer->value] ?? null,
             sepaCi: $transaction->getStructuredDescription()[StructuredDescriptionCodes::CreditorIdentifier->value] ?? null,
             bookDate: $transaction->getValutaDate()?->format(DateTimeInterface::ATOM),
+        );
+    }
+
+    public function mapFromBankDepotAufstellung(float $correctionAmount, GetDepotAufstellung $depotAufstellung, Account $account): FireflyTransaction
+    {
+        if ($correctionAmount > 0) {
+            $type = 'withdrawal';
+        } else {
+            $type = 'deposit';
+        }
+
+        $destinationAccount = new FireflyAccount(
+            id: $account->fireflyAccountId,
+        );
+
+        $statementOfHoldings = $depotAufstellung->getStatement();
+
+        $notes = '';
+        foreach ($statementOfHoldings->getHoldings() as $holding) {
+            if ($holding->getName() === null) {
+                continue;
+            }
+            $notes .= mb_trim($holding->getName()) . ': ' . number_format($holding->getAmount() * $holding->getPrice(), 2) . ' ' . $holding->getCurrency() . PHP_EOL;
+        }
+
+        $transactionDate = $statementOfHoldings->getHoldings()[0]->getDate() ?? new DateTime();
+
+        return new FireflyTransaction(
+            type: $type,
+            date: $transactionDate->format(DateTimeInterface::ATOM),
+            amount: (string) $correctionAmount,
+            description: 'Update current balance',
+            destinationId: $destinationAccount->id,
+            destinationName: $destinationAccount->name,
+            destinationIban: $destinationAccount->iban,
+            notes: $notes,
         );
     }
 
