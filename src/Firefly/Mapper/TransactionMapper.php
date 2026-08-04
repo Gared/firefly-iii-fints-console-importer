@@ -54,15 +54,23 @@ class TransactionMapper
 
     public function mapFromBankDepotAufstellung(float $correctionAmount, GetDepotAufstellung $depotAufstellung, Account $account): FireflyTransaction
     {
-        if ($correctionAmount > 0) {
-            $type = 'withdrawal';
-        } else {
-            $type = 'deposit';
-        }
-
-        $destinationAccount = new FireflyAccount(
-            id: $account->fireflyAccountId,
+        $fakeAccount = new FireflyAccount(
+            name: 'Cash account',
         );
+
+        if ($correctionAmount > 0) {
+            $type = 'deposit';
+            $destinationAccount = new FireflyAccount(
+                id: $account->fireflyAccountId,
+            );
+            $sourceAccount = $fakeAccount;
+        } else {
+            $type = 'withdrawal';
+            $sourceAccount = new FireflyAccount(
+                id: $account->fireflyAccountId,
+            );
+            $destinationAccount = $fakeAccount;
+        }
 
         $statementOfHoldings = $depotAufstellung->getStatement();
 
@@ -81,6 +89,9 @@ class TransactionMapper
             date: $transactionDate->format(DateTimeInterface::ATOM),
             amount: (string) $correctionAmount,
             description: 'Update current balance',
+            sourceId: $sourceAccount->id,
+            sourceName: $sourceAccount->name,
+            sourceIban: $sourceAccount->iban,
             destinationId: $destinationAccount->id,
             destinationName: $destinationAccount->name,
             destinationIban: $destinationAccount->iban,
