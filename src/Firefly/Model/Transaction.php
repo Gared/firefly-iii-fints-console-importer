@@ -87,6 +87,7 @@ readonly class Transaction
             'source_iban' => $this->sourceIban,
             'destination_id' => $this->destinationId,
             'destination_name' => $this->destinationName,
+            'destination_iban' => $this->destinationIban,
             'piggy_bank_id' => $this->piggyBankId,
             'piggy_bank_name' => $this->piggyBankName,
             'bill_id' => $this->billId,
@@ -116,6 +117,6 @@ readonly class Transaction
             $data['reconciled'] = $this->reconciled;
         }
 
-        return $data;
+        return array_filter($data);
     }
 }
