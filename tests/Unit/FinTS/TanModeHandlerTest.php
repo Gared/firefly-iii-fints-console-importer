@@ -9,13 +9,14 @@ use Fhp\FinTs;
 use Fhp\Model\TanMode;
 use Fhp\Model\TanRequest;
 use Gared\FireflyImporter\FinTS\TanModeHandler;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 class TanModeHandlerTest extends TestCase
 {
-    private BaseAction $action;
+    private BaseAction&MockObject $action;
 
     protected function setUp(): void
     {
