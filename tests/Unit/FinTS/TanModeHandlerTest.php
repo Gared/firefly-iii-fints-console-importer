@@ -8,8 +8,6 @@ use Fhp\BaseAction;
 use Fhp\FinTs;
 use Fhp\Model\TanMode;
 use Fhp\Model\TanRequest;
-use Fhp\Protocol\BPD;
-use Fhp\Protocol\UPD;
 use Gared\FireflyImporter\FinTS\TanModeHandler;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -17,26 +15,33 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class TanModeHandlerTest extends TestCase
 {
+    private BaseAction $action;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->action = $this->createMock(BaseAction::class);
+    }
+
     public function testHandleReturnsEarlyWhenActionDoesNotNeedTan(): void
     {
         $handler = new TanModeHandler();
-        $action = new DummyAction();
 
         $finTs = $this->createMock(FinTs::class);
         $finTs->expects(self::never())->method('getSelectedTanMode');
 
+        $this->action->expects(self::once())->method('needsTan')->willReturn(false);
+
         $io = $this->createStub(SymfonyStyle::class);
 
-        $handler->handle($finTs, $action, $io);
-
-        self::assertFalse($action->needsTan());
+        $handler->handle($finTs, $this->action, $io);
     }
 
     public function testHandleThrowsWhenNoTanModeWasSelected(): void
     {
         $handler = new TanModeHandler();
-        $action = new DummyAction();
-        $action->setTanRequest(new DummyTanRequest('pid-1', null, null));
+        $this->action->expects(self::once())->method('needsTan')->willReturn(true);
 
         $finTs = $this->createMock(FinTs::class);
         $finTs->expects(self::once())
@@ -48,14 +53,18 @@ class TanModeHandlerTest extends TestCase
         self::expectException(RuntimeException::class);
         self::expectExceptionMessageIs('No tan mode was selected');
 
-        $handler->handle($finTs, $action, $io);
+        $handler->handle($finTs, $this->action, $io);
     }
 
     public function testHandleCoupledTanSubmitsTanFromHiddenPrompt(): void
     {
         $handler = new TanModeHandler();
-        $action = new DummyAction();
-        $action->setTanRequest(new DummyTanRequest('pid-2', 'Open your banking app', 'My Phone'));
+        $tanRequest = $this->createMock(TanRequest::class);
+        $tanRequest->expects(self::exactly(2))->method('getChallenge')->willReturn('Open your banking app');
+        $tanRequest->expects(self::exactly(2))->method('getTanMediumName')->willReturn('My Phone');
+
+        $this->action->expects(self::once())->method('needsTan')->willReturn(true);
+        $this->action->expects(self::once())->method('getTanRequest')->willReturn($tanRequest);
 
         $tanMode = $this->createStub(TanMode::class);
         $tanMode->method('isDecoupled')->willReturn(false);
@@ -66,7 +75,7 @@ class TanModeHandlerTest extends TestCase
             ->willReturn($tanMode);
         $finTs->expects(self::once())
             ->method('submitTan')
-            ->with(self::identicalTo($action), '123456');
+            ->with(self::identicalTo($this->action), '123456');
 
         $messages = [];
         $io = $this->getMockBuilder(SymfonyStyle::class)
@@ -83,7 +92,7 @@ class TanModeHandlerTest extends TestCase
             ->with('Please enter your TAN')
             ->willReturn('123456');
 
-        $handler->handle($finTs, $action, $io);
+        $handler->handle($finTs, $this->action, $io);
 
         self::assertSame([
             'Instructions: Open your banking app',
@@ -94,8 +103,12 @@ class TanModeHandlerTest extends TestCase
     public function testHandleCoupledTanThrowsOnEmptyTan(): void
     {
         $handler = new TanModeHandler();
-        $action = new DummyAction();
-        $action->setTanRequest(new DummyTanRequest('pid-3', null, null));
+        $tanRequest = $this->createMock(TanRequest::class);
+        $tanRequest->expects(self::once())->method('getChallenge')->willReturn(null);
+        $tanRequest->expects(self::once())->method('getTanMediumName')->willReturn(null);
+
+        $this->action->expects(self::once())->method('needsTan')->willReturn(true);
+        $this->action->expects(self::once())->method('getTanRequest')->willReturn($tanRequest);
 
         $tanMode = $this->createStub(TanMode::class);
         $tanMode->method('isDecoupled')->willReturn(false);
@@ -119,46 +132,6 @@ class TanModeHandlerTest extends TestCase
         self::expectException(RuntimeException::class);
         self::expectExceptionMessageIs('TAN must not be empty');
 
-        $handler->handle($finTs, $action, $io);
+        $handler->handle($finTs, $this->action, $io);
     }
 }
-
-final class DummyAction extends BaseAction
-{
-    protected function createRequest(BPD $bpd, ?UPD $upd)
-    {
-        return [];
-    }
-}
-
-final class DummyTanRequest implements TanRequest
-{
-    public function __construct(
-        private readonly string $processId,
-        private readonly ?string $challenge,
-        private readonly ?string $tanMediumName,
-    ) {
-    }
-
-    public function getProcessId(): string
-    {
-        return $this->processId;
-    }
-
-    public function getChallenge(): ?string
-    {
-        return $this->challenge;
-    }
-
-    public function getTanMediumName(): ?string
-    {
-        return $this->tanMediumName;
-    }
-
-    public function getChallengeHhdUc(): ?\Fhp\Syntax\Bin
-    {
-        return null;
-    }
-}
-
-
