@@ -9,9 +9,14 @@ WORKDIR /app
 
 FROM base AS development
 
-# TODO: Install xdebug
+ENV APP_ENV=dev APP_DEBUG=1 COMPOSER_HOME=/tmp
+
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
 
 FROM base AS production
+
+ENV APP_ENV=prod APP_DEBUG=0
 
 COPY . /app
 
