@@ -39,6 +39,7 @@ class ImportTransactionsCommand extends Command
         $this
             ->setDescription('Imports transactions from a FinTS account to Firefly III.')
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Path to the configuration file.')
+            ->addOption('dry-run', null, InputOption::VALUE_NONE, 'If set, the command will not actually import transactions.')
             ->setHelp('This command allows you to import transactions from a FinTS account to Firefly III...');
     }
 
@@ -110,6 +111,12 @@ class ImportTransactionsCommand extends Command
             }
         }
         $table->render();
+
+        if ($input->getOption('dry-run')) {
+            $io->info('Dry run mode enabled. Transactions will not be sent.');
+
+            return self::SUCCESS;
+        }
 
         $io->info('Sending [' . count($fireflyTransactions) . '] transactions');
         $successCount = 0;
