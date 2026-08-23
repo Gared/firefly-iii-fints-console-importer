@@ -1,4 +1,4 @@
-# Firefly III FinTS Console Importer
+# FinTS Console Importer for Firefly III
 
 Import your bank transactions into [Firefly III](https://www.firefly-iii.org/) using the [FinTS](https://www.hbci-zka.de/) protocol (used by most German banks).
 
