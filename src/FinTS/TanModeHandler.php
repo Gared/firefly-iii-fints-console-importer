@@ -27,8 +27,30 @@ class TanModeHandler
         if ($selectedTanMode->isDecoupled()) {
             $this->handleDecoupled($finTs, $selectedTanMode, $action, $io);
         } else {
-            throw new RuntimeException('TODO: Implement coupled tan mode');
+            $this->handleCoupled($finTs, $action, $io);
         }
+    }
+
+    private function handleCoupled(FinTs $finTs, BaseAction $action, SymfonyStyle $io): void
+    {
+        $tanRequest = $action->getTanRequest();
+        if ($tanRequest === null) {
+            throw new RuntimeException('There is no tan request');
+        }
+
+        if ($tanRequest->getChallenge() !== null) {
+            $io->info('Instructions: ' . $tanRequest->getChallenge());
+        }
+        if ($tanRequest->getTanMediumName() !== null) {
+            $io->info('Please use this device: ' . $tanRequest->getTanMediumName());
+        }
+
+        $tan = $io->askHidden('Please enter your TAN');
+        if (is_string($tan) === false || trim($tan) === '') {
+            throw new RuntimeException('TAN must not be empty');
+        }
+
+        $finTs->submitTan($action, $tan);
     }
 
     private function handleDecoupled(FinTs $finTs, TanMode $tanMode, BaseAction $action, SymfonyStyle $io): void
