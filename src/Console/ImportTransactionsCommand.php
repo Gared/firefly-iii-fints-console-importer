@@ -7,8 +7,12 @@ namespace Gared\FireflyImporter\Console;
 use DateTime;
 use Fhp\Action\GetSEPAAccounts;
 use Fhp\Action\GetStatementOfAccount;
+use Fhp\Action\GetStatementOfAccountXML;
+use Fhp\CAMT\CAMT;
 use Fhp\FinTs;
 use Fhp\Model\SEPAAccount;
+use Fhp\Model\StatementOfAccount\StatementOfAccount;
+use Fhp\UnsupportedException;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
 use Gared\FireflyImporter\Config\Parser\Config;
 use Gared\FireflyImporter\FinTS\FinTSFactory;
@@ -82,17 +86,11 @@ class ImportTransactionsCommand extends Command
 
         $account = $this->getAccount($finTs, $config);
 
-        $getStatementOfAccountRequest = GetStatementOfAccount::create(
-            account: $account,
-            from: DateTime::createFromInterface($config->account->fromDate),
-            to: DateTime::createFromInterface($config->account->toDate)
-        );
-        $finTs->execute($getStatementOfAccountRequest);
-        $statementAccount = $getStatementOfAccountRequest->getStatement();
+        $statementAccount = $this->getStatementOfAccount($account, $config, $finTs);
 
         $table = new Table($output);
 
-        $table->setHeaders(['Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
+        $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
 
         $transactionMapper = new TransactionMapper();
 
@@ -100,6 +98,7 @@ class ImportTransactionsCommand extends Command
         foreach ($statementAccount->getStatements() as $statement) {
             foreach ($statement->getTransactions() as $transaction) {
                 $table->addRow([
+                    $transaction->getBookingDate()?->format('Y-m-d'),
                     $transaction->getCreditDebit(),
                     $transaction->getAmount(),
                     $transaction->getMainDescription(),
@@ -138,6 +137,33 @@ class ImportTransactionsCommand extends Command
         $io->info('Sent firefly transactions: ' . $successCount . '/' . count($fireflyTransactions) . ' successful');
 
         return self::SUCCESS;
+    }
+
+    private function getStatementOfAccount(SEPAAccount $account, Config $config, FinTs $finTs): StatementOfAccount
+    {
+        try {
+            $getStatementOfAccountRequestXML = GetStatementOfAccountXML::create(
+                account: $account,
+                from: DateTime::createFromInterface($config->account->fromDate),
+                to: DateTime::createFromInterface($config->account->toDate)
+            );
+            $finTs->execute($getStatementOfAccountRequestXML);
+            $bookedXML = $getStatementOfAccountRequestXML->getBookedXML();
+
+            $parser = new CAMT();
+            $parsedCAMT = $parser->parse($bookedXML);
+
+            return StatementOfAccount::fromCAMTArray($parsedCAMT);
+        } catch (UnsupportedException) {
+            $getStatementOfAccountRequest = GetStatementOfAccount::create(
+                account: $account,
+                from: DateTime::createFromInterface($config->account->fromDate),
+                to: DateTime::createFromInterface($config->account->toDate)
+            );
+            $finTs->execute($getStatementOfAccountRequest);
+
+            return $getStatementOfAccountRequest->getStatement();
+        }
     }
 
     private function getAccount(FinTs $finTs, Config $config): SEPAAccount
