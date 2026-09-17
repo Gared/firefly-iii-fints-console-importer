@@ -1,4 +1,4 @@
-FROM php:8.5.10-cli@sha256:9ebdf4c28ab12c02085e171c31e22ac5f7bbb6a9f6927e3bc3dfe7ee23df51e0 AS base
+FROM php:8.5.10-cli@sha256:a39fb299e915914e5d587baaca6c9c7a782b00235375ad33abd16bb2df529975 AS base
 
 COPY --from=composer/composer:2.10.3-bin@sha256:24ff31fd48a5bffb7fa97a29195e8f3bed4c0ee728dcae6335a0c0b5acfaca60 /composer /usr/local/bin/composer
 
