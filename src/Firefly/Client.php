@@ -60,6 +60,7 @@ class Client
                     id: $accountData['id'],
                     iban: $accountData['attributes']['iban'],
                     name: $accountData['attributes']['name'],
+                    currentBalance: (float) $accountData['attributes']['current_balance'],
                 );
             }
 
@@ -113,8 +114,9 @@ class Client
      * @phpstan-assert-if-true array{
      *     id: numeric-string,
      *     attributes: array{
-     *         iban: string,
+     *         iban: string|null,
      *         name: string,
+     *         current_balance: numeric,
      *     }
      * } $accountData
      */
@@ -133,10 +135,16 @@ class Client
         }
 
         if (array_key_exists('iban', $accountData['attributes']) === false || is_string($accountData['attributes']['iban']) === false) {
-            return false;
+            if ($accountData['attributes']['iban'] !== null) {
+                return false;
+            }
         }
 
         if (array_key_exists('name', $accountData['attributes']) === false || is_string($accountData['attributes']['name']) === false) {
+            return false;
+        }
+
+        if (array_key_exists('current_balance', $accountData['attributes']) === false || is_numeric($accountData['attributes']['current_balance']) === false) {
             return false;
         }
 
