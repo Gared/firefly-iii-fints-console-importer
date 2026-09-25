@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "466f1fb809e5c924f32968290e05f989",
+    "content-hash": "161c7e3454ec9f28c31d9854100146fd",
     "packages": [
         {
             "name": "nemiah/php-fints",
-            "version": "4.1.0",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nemiah/phpFinTS.git",
-                "reference": "845c8cc973310c11ae2441e88e118c505d1b59f1"
+                "reference": "dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nemiah/phpFinTS/zipball/845c8cc973310c11ae2441e88e118c505d1b59f1",
-                "reference": "845c8cc973310c11ae2441e88e118c505d1b59f1",
+                "url": "https://api.github.com/repos/nemiah/phpFinTS/zipball/dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c",
+                "reference": "dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c",
                 "shasum": ""
             },
             "require": {
@@ -36,6 +36,7 @@
                 "monolog/monolog": "Allow sending log messages to a variety of different handlers",
                 "nemiah/php-sepa-xml": "dev-master"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -50,9 +51,9 @@
             "homepage": "https://github.com/nemiah/phpFinTS",
             "support": {
                 "issues": "https://github.com/nemiah/phpFinTS/issues",
-                "source": "https://github.com/nemiah/phpFinTS/tree/4.1"
+                "source": "https://github.com/nemiah/phpFinTS/tree/master"
             },
-            "time": "2026-05-10T19:07:56+00:00"
+            "time": "2026-09-22T07:10:38+00:00"
         },
         {
             "name": "psr/container",
@@ -4548,7 +4549,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "nemiah/php-fints": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
