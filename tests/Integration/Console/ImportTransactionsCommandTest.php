@@ -14,6 +14,7 @@ use Gared\FireflyImporter\FinTS\FinTSFactory;
 use Gared\FireflyImporter\State\StateHandler;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use ReflectionObject;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -59,7 +60,7 @@ class ImportTransactionsCommandTest extends TestCase
                 file_get_contents(__DIR__ . '/../Fixtures/responses/camt/get_statement.txt'),
             );
 
-        $reflectionObject = new \ReflectionObject($finTs);
+        $reflectionObject = new ReflectionObject($finTs);
         $reflectionProperty = $reflectionObject->getProperty('connection');
         $reflectionProperty->setValue($finTs, $connection);
 
@@ -101,7 +102,7 @@ class ImportTransactionsCommandTest extends TestCase
                 file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/get_statement.txt'),
             );
 
-        $reflectionObject = new \ReflectionObject($finTs);
+        $reflectionObject = new ReflectionObject($finTs);
         $reflectionProperty = $reflectionObject->getProperty('connection');
         $reflectionProperty->setValue($finTs, $connection);
 

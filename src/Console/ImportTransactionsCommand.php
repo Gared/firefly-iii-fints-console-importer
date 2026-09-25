@@ -39,9 +39,9 @@ use Symfony\Component\HttpClient\HttpClient;
 class ImportTransactionsCommand extends Command
 {
     public function __construct(
-        private readonly ?StateHandler $stateHandler = new StateHandler(),
-        private readonly ?FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
-        private readonly ?ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
+        private readonly StateHandler $stateHandler = new StateHandler(),
+        private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
+        private readonly ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
     ) {
         parent::__construct();
     }
