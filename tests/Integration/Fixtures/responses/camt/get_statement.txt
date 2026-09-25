@@ -1,0 +1,92 @@
+HNHBK:1:3+000000000000+300+FAKEDIALOGIDabcdefghijklmnopqr+2+FAKEDIALOGIDabcdefghijklmnopqr:4'HNVSK:998:3+PIN:1+998+1+2::FAKEKUNDENSYSTEMIDabcdefghijkl+1+2:2:13:@8@00000000:6:1+280:50010517:test?@user:V:0:0+0'HNVSD:999:1+@3551@HIRMG:2:2:+0010::Die Nachricht wurde entgegengenommen.'HIRMS:3:2:3+0020::Der Auftrag wurde ausgefuhrt.'HICAZ:4:1:3+DExxABCDEFGH1234567890:INGDDEFFXXX+urn?:iso?:std?:iso?:20022?:tech?:xsd?:camt.053.001.02+@3340@<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+    <BkToCstmrStmt>
+        <GrpHdr>
+            <!-- FinTS message tracking metadata -->
+            <MsgId>ING-FINTS-STMT-20260925-01</MsgId>
+            <CreDtTm>2026-09-25T18:30:00Z</CreDtTm>
+        </GrpHdr>
+        <Stmt>
+            <Id>ING-ACCOUNT-STATEMENT-999</Id>
+            <ElctrncSeqNb>2026001</ElctrncSeqNb>
+            <CreDtTm>2026-09-25T18:30:00Z</CreDtTm>
+            <Acct>
+                <Id>
+                    <IBAN>NL99INGB0123456789</IBAN>
+                </Id>
+                <Ccy>EUR</Ccy>
+            </Acct>
+
+            <!-- 1. Opening Legal Balance (Required by phpFinTs to calculate starting point) -->
+            <Bal>
+                <Tp>
+                    <CdOrPrtry>
+                        <Cd>OPBD</Cd>
+                    </CdOrPrtry>
+                </Tp>
+                <Amt Ccy="EUR">2450.00</Amt>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+                <Dt>
+                    <Dt>2026-09-24</Dt>
+                </Dt>
+            </Bal>
+
+            <!-- 2. Transaction Entry (Example: Received SEPA Credit Transfer) -->
+            <Ntry>
+                <Amt Ccy="EUR">150.00</Amt>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+                <Sts>BOOK</Sts>
+                <BookgDt>
+                    <Dt>2026-09-24</Dt>
+                </BookgDt>
+                <ValDt>
+                    <Dt>2026-09-24</Dt>
+                </ValDt>
+                <BkTxCd>
+                    <Domn>
+                        <Cd>PMNT</Cd>
+                        <Fmly>
+                            <Cd>RcvdPmt</Cd>
+                            <SubFmlyCd>SEPA</SubFmlyCd>
+                        </Fmly>
+                    </Domn>
+                </BkTxCd>
+                <NtryDtls>
+                    <TxDtls>
+                        <Refs>
+                            <!-- FinTS uses EndToEndId heavily for ERP match-up loops -->
+                            <EndToEndId>FINTS-E2E-REF-77621</EndToEndId>
+                        </Refs>
+                        <RltdPties>
+                            <Dbtr>
+                                <Nm>Max Mustermann</Nm>
+                            </Dbtr>
+                            <DbtrAcct>
+                                <Id>
+                                    <IBAN>DE89370400440532111100</IBAN>
+                                </Id>
+                            </DbtrAcct>
+                        </RltdPties>
+                        <RmtInf>
+                            <!-- This maps directly to $entry->getRemittanceInformation() in phpFinTs -->
+                            <Ustrd>RECHNUNG-NR-2026-44129</Ustrd>
+                        </RmtInf>
+                    </TxDtls>
+                </NtryDtls>
+            </Ntry>
+
+            <!-- 3. Closing Legal Balance -->
+            <Bal>
+                <Tp>
+                    <CdOrPrtry>
+                        <Cd>CLBD</Cd>
+                    </CdOrPrtry>
+                </Tp>
+                <Amt Ccy="EUR">2600.00</Amt>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+                <Dt>
+                    <Dt>2026-09-24</Dt>
+                </Dt>
+            </Bal>
+        </Stmt>
+    </BkToCstmrStmt>
+</Document>''HNHBS:5:1+2'

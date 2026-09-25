@@ -17,7 +17,7 @@
   "require": {
     "php": "^8.5",
     "symfony/console": "^8.1",
-    "nemiah/php-fints": "^4.1",
+    "nemiah/php-fints": "dev-master",
     "symfony/http-client": "^8.1",
     "symfony/validator": "^8.1",
     "ext-ctype": "*",
