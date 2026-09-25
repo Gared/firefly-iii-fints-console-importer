@@ -38,6 +38,14 @@ use Symfony\Component\HttpClient\HttpClient;
 #[AsCommand(name: 'import-transactions')]
 class ImportTransactionsCommand extends Command
 {
+    public function __construct(
+        private readonly ?StateHandler $stateHandler = new StateHandler(),
+        private readonly ?FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
+        private readonly ?ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
+    ) {
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
@@ -58,14 +66,10 @@ class ImportTransactionsCommand extends Command
 
         $output->writeln('Running the configuration file: ' . $configPath);
 
-        $configFileHandlerFactory = new ConfigFileHandlerFactory();
-        $configFileHandler = $configFileHandlerFactory->create();
+        $configFileHandler = $this->configFileHandlerFactory->create();
         $config = $configFileHandler->load($configPath);
 
-        $stateHandler = new StateHandler();
-
-        $finTsFactory = new FinTSFactory(new FinTSOptionsFactory());
-        $finTs = $finTsFactory->create($config, $stateHandler->load($config->code));
+        $finTs = $this->finTsFactory->create($config, $this->stateHandler->load($config->code));
         $finTs->setLogger(new ConsoleLogger($output));
         $finTs->forgetDialog();
 

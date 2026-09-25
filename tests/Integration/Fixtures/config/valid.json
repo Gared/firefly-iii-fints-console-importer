@@ -9,7 +9,7 @@
   "firefly_access_token": "TOKEN",
   "choose_account_automation":
   {
-    "bank_account_iban": "",
+    "bank_account_iban": "DExxABCDEFGH1234567890",
     "firefly_account_id": "1",
     "from": "now - 2 days",
     "to": "now"
