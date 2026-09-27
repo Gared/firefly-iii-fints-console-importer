@@ -4,20 +4,15 @@ declare(strict_types=1);
 
 namespace Gared\FireflyImporter\Console;
 
-use DateTime;
 use Fhp\Action\GetDepotAufstellung;
 use Fhp\Action\GetSEPAAccounts;
-use Fhp\Action\GetStatementOfAccount;
-use Fhp\Action\GetStatementOfAccountXML;
-use Fhp\CAMT\CAMT;
 use Fhp\FinTs;
 use Fhp\Model\SEPAAccount;
-use Fhp\Segment\HIUPD\HIUPDv4;
-use Fhp\Segment\HIUPD\HIUPDv6;
-use Fhp\Model\StatementOfAccount\StatementOfAccount;
-use Fhp\UnsupportedException;
+use Fhp\Segment\HIUPD\HIUPD;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
 use Gared\FireflyImporter\Config\Parser\Config;
+use Gared\FireflyImporter\FinTS\AccountStatementLoader;
+use Gared\FireflyImporter\FinTS\BankAccountType;
 use Gared\FireflyImporter\FinTS\FinTSFactory;
 use Gared\FireflyImporter\FinTS\FinTSOptionsFactory;
 use Gared\FireflyImporter\Firefly\Client;
@@ -47,6 +42,7 @@ class ImportTransactionsCommand extends Command
         private readonly StateHandler $stateHandler = new StateHandler(),
         private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
         private readonly ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
+        private readonly AccountStatementLoader $accountStatementLoader = new AccountStatementLoader(),
     ) {
         parent::__construct();
     }
@@ -103,13 +99,15 @@ class ImportTransactionsCommand extends Command
         }
 
         $hiupd = $upd->findHiupd($account);
-        if ($hiupd instanceof HIUPDv6 === false && $hiupd instanceof HIUPDv4 === false) {
+        if ($hiupd instanceof HIUPD === false) {
             $io->error('HIUPD information not found.');
 
             return self::FAILURE;
         }
 
-        if (str_contains($hiupd->kontoproduktbezeichnung ?? '', 'Depot')) {
+        $accountType = BankAccountType::fromHiupd($hiupd);
+
+        if ($accountType === BankAccountType::SECURITIES_ACCOUNT) {
             $io->info('The selected account is a depot account. Handle only balance difference.');
 
             $this->handleDepot($finTs, $account, $config, $fireflyClient, $io);
@@ -117,10 +115,9 @@ class ImportTransactionsCommand extends Command
             return self::FAILURE;
         }
 
-        $statementAccount = $this->getStatementOfAccount($account, $config, $finTs);
+        $statementAccount = $this->accountStatementLoader->getStatementOfAccount($account, $config, $finTs);
 
         $table = new Table($output);
-
         $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
 
         $transactionMapper = new TransactionMapper();
@@ -159,33 +156,6 @@ class ImportTransactionsCommand extends Command
         $io->info('Sent firefly transactions: ' . $successCount . '/' . count($fireflyTransactions) . ' successful');
 
         return self::SUCCESS;
-    }
-
-    private function getStatementOfAccount(SEPAAccount $account, Config $config, FinTs $finTs): StatementOfAccount
-    {
-        try {
-            $getStatementOfAccountRequestXML = GetStatementOfAccountXML::create(
-                account: $account,
-                from: DateTime::createFromInterface($config->account->fromDate),
-                to: DateTime::createFromInterface($config->account->toDate)
-            );
-            $finTs->execute($getStatementOfAccountRequestXML);
-            $bookedXML = $getStatementOfAccountRequestXML->getBookedXML();
-
-            $parser = new CAMT();
-            $parsedCAMT = $parser->parse($bookedXML);
-
-            return StatementOfAccount::fromCAMTArray($parsedCAMT);
-        } catch (UnsupportedException) {
-            $getStatementOfAccountRequest = GetStatementOfAccount::create(
-                account: $account,
-                from: DateTime::createFromInterface($config->account->fromDate),
-                to: DateTime::createFromInterface($config->account->toDate)
-            );
-            $finTs->execute($getStatementOfAccountRequest);
-
-            return $getStatementOfAccountRequest->getStatement();
-        }
     }
 
     private function getSepaAccount(FinTs $finTs, Config $config): SEPAAccount
@@ -234,7 +204,7 @@ class ImportTransactionsCommand extends Command
         }
 
         if ($fireflyAccount === null) {
-            throw new RuntimeException('Account not found. Please review your configuration file');
+            throw new RuntimeException('Firefly account not found. Please review your configuration file');
         }
 
         $correctionAmount = abs($getDepotAufstellung->getDepotWert() - $fireflyAccount->currentBalance);
