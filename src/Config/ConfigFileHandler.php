@@ -11,6 +11,8 @@ use Gared\FireflyImporter\Config\Parser\ConfigurationMapper;
 
 class ConfigFileHandler
 {
+    private const string CONFIG_DIRECTORY_PATH = __DIR__ . '/../../data/config/';
+
     public function __construct(
         private ConfigurationMapper $configurationMapper,
     ) {
@@ -48,8 +50,21 @@ class ConfigFileHandler
         return $this->configurationMapper->mapFromData($configData);
     }
 
+    public function ensureStateDirectoryExists(): void
+    {
+        if (!is_dir(self::CONFIG_DIRECTORY_PATH)) {
+            if (!mkdir(self::CONFIG_DIRECTORY_PATH, 0o770, true)) {
+                throw new ConfigPersistException('Directory does not exist: ' . self::CONFIG_DIRECTORY_PATH);
+            }
+        }
+
+        if (!is_writable(self::CONFIG_DIRECTORY_PATH)) {
+            throw new ConfigPersistException('Directory is not writable: ' . self::CONFIG_DIRECTORY_PATH);
+        }
+    }
+
     private function getFilePath(string $fileName): string
     {
-        return __DIR__ . '/../../data/config/' . $fileName;
+        return self::CONFIG_DIRECTORY_PATH . $fileName;
     }
 }

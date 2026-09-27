@@ -9,6 +9,8 @@ use Fhp\Options\FinTsOptions;
 
 class StateHandler
 {
+    private const string STATE_DIRECTORY_PATH = __DIR__ . '/../../data/states/';
+
     public function persist(FinTs $finTs, FinTsOptions $finTsOptions): void
     {
         $persistedFinTs = $finTs->persist();
@@ -37,10 +39,23 @@ class StateHandler
         return $content;
     }
 
+    public function ensureStateDirectoryExists(): void
+    {
+        if (!is_dir(self::STATE_DIRECTORY_PATH)) {
+            if (!mkdir(self::STATE_DIRECTORY_PATH, 0o770, true)) {
+                throw new StatePersistException('Directory does not exist: ' . self::STATE_DIRECTORY_PATH);
+            }
+        }
+
+        if (!is_writable(self::STATE_DIRECTORY_PATH)) {
+            throw new StatePersistException('Directory is not writable: ' . self::STATE_DIRECTORY_PATH);
+        }
+    }
+
     private function getFilePath(string $bankCode): string
     {
         $fileName = urlencode($bankCode) . '.txt';
 
-        return __DIR__ . '/../../data/states/' . $fileName;
+        return self::STATE_DIRECTORY_PATH . $fileName;
     }
 }

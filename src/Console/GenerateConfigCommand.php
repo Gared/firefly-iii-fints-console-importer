@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Gared\FireflyImporter\Console;
 
 use DateTimeImmutable;
+use Fhp\CurlException;
 use Fhp\Model\NoPsd2TanMode;
 use Fhp\Protocol\ServerException;
+use Gared\FireflyImporter\Config\ConfigFileHandler;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
 use Gared\FireflyImporter\Config\Parser\Account;
 use Gared\FireflyImporter\Config\Parser\Config;
@@ -22,21 +24,50 @@ use Symfony\Component\Console\Attribute\Argument;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Ask;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsCommand(name: 'config:generate')]
 class GenerateConfigCommand extends Command
 {
+    private ConfigFileHandler $configFileHandler;
+
+    private HttpClientInterface $httpClient;
+
+    public function __construct(
+        private readonly StateHandler $stateHandler = new StateHandler(),
+        private readonly FinTSOptionsFactory $finTsOptionsFactory = new FinTSOptionsFactory(),
+        private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
+        ?ConfigFileHandler $configFileHandler = null,
+        ?HttpClientInterface $httpClient = null,
+    ) {
+        $this->configFileHandler = $configFileHandler ??= new ConfigFileHandlerFactory()->create();
+        $this->httpClient = $httpClient ??= HttpClient::create([
+            'max_redirects' => 0,
+        ]);
+        parent::__construct();
+    }
+
     protected function configure(): void
     {
         $this
             ->setDescription('Generate a new configuration file')
             ->setHelp('This command allows you to generate a new configuration file interactively');
+    }
+
+    protected function initialize(InputInterface $input, OutputInterface $output): void
+    {
+        parent::initialize($input, $output);
+
+        $this->configFileHandler->ensureStateDirectoryExists();
+        $this->stateHandler->ensureStateDirectoryExists();
     }
 
     public function __invoke(
@@ -45,7 +76,7 @@ class GenerateConfigCommand extends Command
         #[Ask(question: 'Enter the url to your bank FinTS API', constraints: [new Assert\Url()])]
         string $bankUrl,
         #[Argument]
-        #[Ask(question: 'Enter the code of your bank (BLZ)', constraints: [new Assert\Regex('/[0-9]+/')])]
+        #[Ask(question: 'Enter the code of your bank (BLZ)', constraints: [new Assert\Regex(pattern: '/^[0-9]+$/', message: 'The BLZ must only contain digests (no spaces allowed)')])]
         string $bankCode,
         #[Argument]
         #[Ask(question: 'Enter the username that you use to login to your bank', constraints: [new Assert\NotBlank()])]
@@ -60,15 +91,9 @@ class GenerateConfigCommand extends Command
         #[Ask(question: 'Enter the personal access token to connect to your firefly instance', constraints: [new Assert\NotBlank()])]
         string $fireflyAccessToken,
     ): int {
-        $stateHandler = new StateHandler();
-        $configFileHandlerFactory = new ConfigFileHandlerFactory();
-        $configFileHandler = $configFileHandlerFactory->create();
+        $finTsOptions = $this->finTsOptionsFactory->create($bankUrl, $bankCode);
 
-        $finTsOptionsFactory = new FinTSOptionsFactory();
-        $finTsFactory = new FinTSFactory($finTsOptionsFactory);
-        $finTsOptions = $finTsOptionsFactory->create($bankUrl, $bankCode);
-
-        $finTs = $finTsFactory->createFromParameters(
+        $finTs = $this->finTsFactory->createFromParameters(
             url: $bankUrl,
             code: $bankCode,
             username: $username,
@@ -80,6 +105,11 @@ class GenerateConfigCommand extends Command
         } catch (ServerException $exception) {
             $io->error($exception->getMessage());
             $tanModes = [];
+        } catch (CurlException $exception) {
+            $io->error('Failed to connect to your bank: ' . $exception->getMessage());
+            $io->error('Please validate the URL of your bank');
+
+            return self::FAILURE;
         }
 
         if (count($tanModes) === 0) {
@@ -126,14 +156,12 @@ class GenerateConfigCommand extends Command
         $tanModeHandler = new TanModeHandler();
         $tanModeHandler->handle($finTs, $login, $io);
 
-        $stateHandler->persist($finTs, $finTsOptions);
+        $this->stateHandler->persist($finTs, $finTsOptions);
 
         $fireflyClient = new Client(
             url: $fireflyUrl,
             accessToken: $fireflyAccessToken,
-            httpClient: HttpClient::create([
-                'max_redirects' => 0,
-            ]),
+            httpClient: $this->httpClient,
         );
 
         $accounts = $fireflyClient->getAccounts(
@@ -170,7 +198,7 @@ class GenerateConfigCommand extends Command
             )
         );
 
-        $configFileHandler->persist($fileName, $config);
+        $this->configFileHandler->persist($fileName, $config);
 
         $io->success('Successfully created configuration file: ' . $fileName);
 
