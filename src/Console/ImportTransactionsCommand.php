@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace Gared\FireflyImporter\Console;
 
-use DateTime;
+use Fhp\Action\GetDepotAufstellung;
 use Fhp\Action\GetSEPAAccounts;
-use Fhp\Action\GetStatementOfAccount;
-use Fhp\Action\GetStatementOfAccountXML;
-use Fhp\CAMT\CAMT;
 use Fhp\FinTs;
 use Fhp\Model\SEPAAccount;
-use Fhp\Model\StatementOfAccount\StatementOfAccount;
-use Fhp\UnsupportedException;
+use Fhp\Segment\HIUPD\HIUPD;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
 use Gared\FireflyImporter\Config\Parser\Config;
+use Gared\FireflyImporter\FinTS\AccountStatementLoader;
+use Gared\FireflyImporter\FinTS\BankAccountType;
 use Gared\FireflyImporter\FinTS\FinTSFactory;
 use Gared\FireflyImporter\FinTS\FinTSOptionsFactory;
 use Gared\FireflyImporter\Firefly\Client;
 use Gared\FireflyImporter\Firefly\Exception\FailedException;
 use Gared\FireflyImporter\Firefly\Mapper\TransactionMapper;
+use Gared\FireflyImporter\Firefly\Model\AccountType;
 use Gared\FireflyImporter\Firefly\Model\CreateTransactionRequest;
+use Gared\FireflyImporter\Firefly\Model\Transaction;
 use Gared\FireflyImporter\State\StateHandler;
 use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
@@ -42,6 +42,7 @@ class ImportTransactionsCommand extends Command
         private readonly StateHandler $stateHandler = new StateHandler(),
         private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
         private readonly ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
+        private readonly AccountStatementLoader $accountStatementLoader = new AccountStatementLoader(),
     ) {
         parent::__construct();
     }
@@ -74,6 +75,7 @@ class ImportTransactionsCommand extends Command
         $finTs->forgetDialog();
 
         $login = $finTs->login();
+        $upd = $login->getUpd();
 
         $httpClient = HttpClient::create([
             'max_redirects' => 0,
@@ -88,12 +90,34 @@ class ImportTransactionsCommand extends Command
             httpClient: $httpClient,
         );
 
-        $account = $this->getAccount($finTs, $config);
+        $account = $this->getSepaAccount($finTs, $config);
 
-        $statementAccount = $this->getStatementOfAccount($account, $config, $finTs);
+        if ($upd === null) {
+            $io->error('UDP information not found.');
+
+            return self::FAILURE;
+        }
+
+        $hiupd = $upd->findHiupd($account);
+        if ($hiupd instanceof HIUPD === false) {
+            $io->error('HIUPD information not found.');
+
+            return self::FAILURE;
+        }
+
+        $accountType = BankAccountType::fromHiupd($hiupd);
+
+        if ($accountType === BankAccountType::SECURITIES_ACCOUNT) {
+            $io->info('The selected account is a depot account. Handle only balance difference.');
+
+            $this->handleDepot($finTs, $account, $config, $fireflyClient, $io);
+
+            return self::FAILURE;
+        }
+
+        $statementAccount = $this->accountStatementLoader->getStatementOfAccount($account, $config, $finTs);
 
         $table = new Table($output);
-
         $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
 
         $transactionMapper = new TransactionMapper();
@@ -124,17 +148,8 @@ class ImportTransactionsCommand extends Command
         $io->info('Sending [' . count($fireflyTransactions) . '] transactions');
         $successCount = 0;
         foreach ($fireflyTransactions as $transaction) {
-            try {
-                $fireflyClient->postTransactions(new CreateTransactionRequest(
-                    transactions: [$transaction],
-                ));
+            if ($this->sendTransaction($fireflyClient, $transaction, $io)) {
                 $successCount++;
-                $io->success('Successfully sent transaction');
-            } catch (FailedException $exception) {
-                $io->error($exception->getMessage());
-                foreach ($exception->errors as $errorType => $message) {
-                    $io->error($errorType . ': ' . print_r($message, true));
-                }
             }
         }
 
@@ -143,34 +158,7 @@ class ImportTransactionsCommand extends Command
         return self::SUCCESS;
     }
 
-    private function getStatementOfAccount(SEPAAccount $account, Config $config, FinTs $finTs): StatementOfAccount
-    {
-        try {
-            $getStatementOfAccountRequestXML = GetStatementOfAccountXML::create(
-                account: $account,
-                from: DateTime::createFromInterface($config->account->fromDate),
-                to: DateTime::createFromInterface($config->account->toDate)
-            );
-            $finTs->execute($getStatementOfAccountRequestXML);
-            $bookedXML = $getStatementOfAccountRequestXML->getBookedXML();
-
-            $parser = new CAMT();
-            $parsedCAMT = $parser->parse($bookedXML);
-
-            return StatementOfAccount::fromCAMTArray($parsedCAMT);
-        } catch (UnsupportedException) {
-            $getStatementOfAccountRequest = GetStatementOfAccount::create(
-                account: $account,
-                from: DateTime::createFromInterface($config->account->fromDate),
-                to: DateTime::createFromInterface($config->account->toDate)
-            );
-            $finTs->execute($getStatementOfAccountRequest);
-
-            return $getStatementOfAccountRequest->getStatement();
-        }
-    }
-
-    private function getAccount(FinTs $finTs, Config $config): SEPAAccount
+    private function getSepaAccount(FinTs $finTs, Config $config): SEPAAccount
     {
         $getSepaAccountsAction = GetSEPAAccounts::create();
         $finTs->execute($getSepaAccountsAction);
@@ -183,5 +171,71 @@ class ImportTransactionsCommand extends Command
         }
 
         throw new RuntimeException('Account not found. Please review your configuration file');
+    }
+
+    private function handleDepot(FinTs $finTs, SEPAAccount $account, Config $config, Client $fireflyClient, SymfonyStyle $io): void
+    {
+        $getDepotAufstellung = GetDepotAufstellung::create($account);
+        $finTs->execute($getDepotAufstellung);
+
+        $statement = $getDepotAufstellung->getStatement();
+
+        $io->info('Current balance: ' . $getDepotAufstellung->getDepotWert());
+
+        $io->table(['Name', 'Amount', 'Price', 'Currency', 'Acquisition Price', 'ISIN', 'Date'], array_map(fn ($holding) => [
+            $holding->getName(),
+            $holding->getAmount(),
+            $holding->getPrice(),
+            $holding->getCurrency(),
+            $holding->getAcquisitionPrice(),
+            $holding->getISIN(),
+        ], $statement->getHoldings()));
+
+        $accounts = $fireflyClient->getAccounts(
+            accountType: AccountType::Asset,
+        );
+
+        $fireflyAccount = null;
+        foreach ($accounts as $account) {
+            if ($account->id === $config->account->fireflyAccountId) {
+                $fireflyAccount = $account;
+                break;
+            }
+        }
+
+        if ($fireflyAccount === null) {
+            throw new RuntimeException('Firefly account not found. Please review your configuration file');
+        }
+
+        $correctionAmount = abs($getDepotAufstellung->getDepotWert() - $fireflyAccount->currentBalance);
+        if ($correctionAmount === 0.0) {
+            $io->warning('No correction needed. The depot value matches the current balance.');
+
+            return;
+        }
+
+        $transactionMapper = new TransactionMapper();
+        $reconciliationTransaction = $transactionMapper->mapFromBankDepotAufstellung($correctionAmount, $getDepotAufstellung, $config->account);
+
+        $this->sendTransaction($fireflyClient, $reconciliationTransaction, $io);
+    }
+
+    private function sendTransaction(Client $fireflyClient, Transaction $transaction, SymfonyStyle $io): bool
+    {
+        try {
+            $fireflyClient->postTransactions(new CreateTransactionRequest(
+                transactions: [$transaction],
+            ));
+            $io->success('Successfully sent transaction');
+
+            return true;
+        } catch (FailedException $exception) {
+            $io->error($exception->getMessage());
+            foreach ($exception->errors as $errorType => $message) {
+                $io->error($errorType . ': ' . print_r($message, true));
+            }
+        }
+
+        return false;
     }
 }

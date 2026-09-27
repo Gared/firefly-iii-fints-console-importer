@@ -17,7 +17,7 @@ indent_size = 2
 indent_size = 4
 
 # Ignore paths
-[tests/Integration/Fixtures/responses/**]
+[tests/Integration/Fixtures/**]
 charset = unset
 end_of_line = unset
 insert_final_newline = unset

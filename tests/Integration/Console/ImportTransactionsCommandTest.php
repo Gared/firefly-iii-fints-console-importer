@@ -53,11 +53,11 @@ class ImportTransactionsCommandTest extends TestCase
         $connection = $this->createStub(Connection::class);
         $connection->method('send')
             ->willReturnOnConsecutiveCalls(
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/sync.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/sync_end.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/init_with_HKCAZ.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/get_accounts_with_HKCAZ.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/camt/get_statement.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/sync.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/sync_end.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/init_with_HKCAZ.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/get_accounts_with_HKCAZ.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/camt/get_statement.txt'),
             );
 
         $reflectionObject = new ReflectionObject($finTs);
@@ -95,11 +95,11 @@ class ImportTransactionsCommandTest extends TestCase
         $connection = $this->createStub(Connection::class);
         $connection->method('send')
             ->willReturnOnConsecutiveCalls(
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/sync.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/sync_end.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/init.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/get_accounts.txt'),
-                file_get_contents(__DIR__ . '/../Fixtures/responses/mt940/get_statement.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/sync.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/sync_end.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/init.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/get_accounts.txt'),
+                file_get_contents(__DIR__ . '/../Fixtures/FinTS/responses/mt940/get_statement.txt'),
             );
 
         $reflectionObject = new ReflectionObject($finTs);

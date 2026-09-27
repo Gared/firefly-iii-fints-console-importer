@@ -15,6 +15,7 @@ class FireflyAccount implements Stringable
         public ?string $id = null,
         public ?string $iban = null,
         public ?string $name = null,
+        public ?float $currentBalance = null,
     ) {
     }
 
