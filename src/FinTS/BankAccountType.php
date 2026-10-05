@@ -35,7 +35,7 @@ enum BankAccountType
         };
     }
 
-    public static function fromHiupd(HIUPD $hiupd): ?self
+    public static function fromHiupd(HIUPD $hiupd): self
     {
         if ($hiupd->getKontoart() !== null) {
             return self::fromNumber($hiupd->getKontoart());
@@ -45,6 +45,6 @@ enum BankAccountType
             return self::SECURITIES_ACCOUNT;
         }
 
-        return null;
+        return self::OTHER;
     }
 }
