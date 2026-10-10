@@ -4,30 +4,21 @@ declare(strict_types=1);
 
 namespace Gared\FireflyImporter\Console;
 
-use Fhp\Action\GetDepotAufstellung;
-use Fhp\Action\GetSEPAAccounts;
-use Fhp\FinTs;
-use Fhp\Model\SEPAAccount;
 use Fhp\Segment\HIUPD\HIUPD;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
-use Gared\FireflyImporter\Config\Parser\Config;
+use Gared\FireflyImporter\FinTS\AccountLoader;
+use Gared\FireflyImporter\FinTS\AccountProcessor;
 use Gared\FireflyImporter\FinTS\AccountStatementLoader;
 use Gared\FireflyImporter\FinTS\BankAccountType;
 use Gared\FireflyImporter\FinTS\FinTSFactory;
 use Gared\FireflyImporter\FinTS\FinTSOptionsFactory;
 use Gared\FireflyImporter\Firefly\Client;
-use Gared\FireflyImporter\Firefly\Exception\FailedException;
 use Gared\FireflyImporter\Firefly\Mapper\TransactionMapper;
-use Gared\FireflyImporter\Firefly\Model\AccountType;
-use Gared\FireflyImporter\Firefly\Model\CreateTransactionRequest;
-use Gared\FireflyImporter\Firefly\Model\Transaction;
 use Gared\FireflyImporter\State\StateHandler;
 use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
-use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -42,7 +33,8 @@ class ImportTransactionsCommand extends Command
         private readonly StateHandler $stateHandler = new StateHandler(),
         private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
         private readonly ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
-        private readonly AccountStatementLoader $accountStatementLoader = new AccountStatementLoader(),
+        private readonly AccountLoader $accountLoader = new AccountLoader(),
+        private readonly AccountProcessor $accountProcessor = new AccountProcessor(new TransactionMapper(), new AccountStatementLoader()),
     ) {
         parent::__construct();
     }
@@ -90,13 +82,13 @@ class ImportTransactionsCommand extends Command
             httpClient: $httpClient,
         );
 
-        $account = $this->getSepaAccount($finTs, $config);
-
         if ($upd === null) {
-            $io->error('UDP information not found.');
+            $io->error('UPD information not found.');
 
             return self::FAILURE;
         }
+
+        $account = $this->accountLoader->load($finTs, $upd, $config);
 
         $hiupd = $upd->findHiupd($account);
         if ($hiupd instanceof HIUPD === false) {
@@ -107,135 +99,16 @@ class ImportTransactionsCommand extends Command
 
         $accountType = BankAccountType::fromHiupd($hiupd);
 
-        if ($accountType === BankAccountType::SECURITIES_ACCOUNT) {
-            $io->info('The selected account is a depot account. Handle only balance difference.');
-
-            $this->handleDepot($finTs, $account, $config, $fireflyClient, $io);
-
-            return self::FAILURE;
-        }
-
-        $statementAccount = $this->accountStatementLoader->getStatementOfAccount($account, $config, $finTs);
-
-        $table = new Table($output);
-        $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
-
-        $transactionMapper = new TransactionMapper();
-
-        $fireflyTransactions = [];
-        foreach ($statementAccount->getStatements() as $statement) {
-            foreach ($statement->getTransactions() as $transaction) {
-                $table->addRow([
-                    $transaction->getBookingDate()?->format('Y-m-d'),
-                    $transaction->getCreditDebit(),
-                    $transaction->getAmount(),
-                    $transaction->getMainDescription(),
-                    $transaction->getAccountNumber(),
-                    $transaction->getName(),
-                ]);
-
-                $fireflyTransactions[] = $transactionMapper->mapFromBankTransaction($transaction, $config->account);
-            }
-        }
-        $table->render();
-
-        if ($input->getOption('dry-run')) {
-            $io->info('Dry run mode enabled. Transactions will not be sent.');
-
-            return self::SUCCESS;
-        }
-
-        $io->info('Sending [' . count($fireflyTransactions) . '] transactions');
-        $successCount = 0;
-        foreach ($fireflyTransactions as $transaction) {
-            if ($this->sendTransaction($fireflyClient, $transaction, $io)) {
-                $successCount++;
-            }
-        }
-
-        $io->info('Sent firefly transactions: ' . $successCount . '/' . count($fireflyTransactions) . ' successful');
-
-        return self::SUCCESS;
-    }
-
-    private function getSepaAccount(FinTs $finTs, Config $config): SEPAAccount
-    {
-        $getSepaAccountsAction = GetSEPAAccounts::create();
-        $finTs->execute($getSepaAccountsAction);
-        $accounts = $getSepaAccountsAction->getAccounts();
-
-        foreach ($accounts as $account) {
-            if ($account->getIban() === $config->account->iban) {
-                return $account;
-            }
-        }
-
-        throw new RuntimeException('Account not found. Please review your configuration file');
-    }
-
-    private function handleDepot(FinTs $finTs, SEPAAccount $account, Config $config, Client $fireflyClient, SymfonyStyle $io): void
-    {
-        $getDepotAufstellung = GetDepotAufstellung::create($account);
-        $finTs->execute($getDepotAufstellung);
-
-        $statement = $getDepotAufstellung->getStatement();
-
-        $io->info('Current balance: ' . $getDepotAufstellung->getDepotWert());
-
-        $io->table(['Name', 'Amount', 'Price', 'Currency', 'Acquisition Price', 'ISIN', 'Date'], array_map(fn ($holding) => [
-            $holding->getName(),
-            $holding->getAmount(),
-            $holding->getPrice(),
-            $holding->getCurrency(),
-            $holding->getAcquisitionPrice(),
-            $holding->getISIN(),
-        ], $statement->getHoldings()));
-
-        $accounts = $fireflyClient->getAccounts(
-            accountType: AccountType::Asset,
+        $this->accountProcessor->handle(
+            finTs: $finTs,
+            account: $account,
+            accountType: $accountType,
+            config: $config,
+            fireflyClient: $fireflyClient,
+            io: $io,
+            dryRun: $input->getOption('dry-run') === true,
         );
 
-        $fireflyAccount = null;
-        foreach ($accounts as $account) {
-            if ($account->id === $config->account->fireflyAccountId) {
-                $fireflyAccount = $account;
-                break;
-            }
-        }
-
-        if ($fireflyAccount === null) {
-            throw new RuntimeException('Firefly account not found. Please review your configuration file');
-        }
-
-        $correctionAmount = abs($getDepotAufstellung->getDepotWert() - $fireflyAccount->currentBalance);
-        if ($correctionAmount === 0.0) {
-            $io->warning('No correction needed. The depot value matches the current balance.');
-
-            return;
-        }
-
-        $transactionMapper = new TransactionMapper();
-        $reconciliationTransaction = $transactionMapper->mapFromBankDepotAufstellung($correctionAmount, $getDepotAufstellung, $config->account);
-
-        $this->sendTransaction($fireflyClient, $reconciliationTransaction, $io);
-    }
-
-    private function sendTransaction(Client $fireflyClient, Transaction $transaction, SymfonyStyle $io): bool
-    {
-        try {
-            $fireflyClient->postTransactions(new CreateTransactionRequest(
-                transactions: [$transaction],
-            ));
-            $io->success('Successfully sent transaction');
-
-            return true;
-        } catch (FailedException $exception) {
-            $io->error($exception->getMessage());
-            foreach ($exception->errors as $errorType => $message) {
-                $io->error($errorType . ': ' . print_r($message, true));
-            }
-        }
-
-        return false;
+        return self::SUCCESS;
     }
 }
