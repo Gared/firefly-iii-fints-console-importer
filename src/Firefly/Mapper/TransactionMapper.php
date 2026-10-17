@@ -119,7 +119,10 @@ class TransactionMapper
             if ($holding->getName() === null) {
                 continue;
             }
-            $notes .= mb_trim($holding->getName()) . ': ' . number_format($holding->getAmount() * $holding->getPrice(), 2) . ' ' . $holding->getCurrency() . PHP_EOL;
+            $notes .= mb_trim('|' . $holding->getName()) . '|' . number_format($holding->getAmount() * $holding->getPrice(), 2) . ' ' . $holding->getCurrency() . '|' . PHP_EOL;
+        }
+        if ($notes !== '') {
+            $notes = '|name|balance|' . PHP_EOL . '|-|-|' . PHP_EOL . $notes;
         }
 
         $transactionDate = $statementOfHoldings->getHoldings()[0]->getDate() ?? new DateTime();
