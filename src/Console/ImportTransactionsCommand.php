@@ -8,15 +8,11 @@ use Fhp\Segment\HIUPD\HIUPD;
 use Gared\FireflyImporter\Config\ConfigFileHandlerFactory;
 use Gared\FireflyImporter\FinTS\AccountLoader;
 use Gared\FireflyImporter\FinTS\AccountProcessor;
-use Gared\FireflyImporter\FinTS\AccountStatementLoader;
 use Gared\FireflyImporter\FinTS\BankAccountType;
 use Gared\FireflyImporter\FinTS\FinTSFactory;
 use Gared\FireflyImporter\FinTS\FinTSOptionsFactory;
-use Gared\FireflyImporter\Firefly\Client;
-use Gared\FireflyImporter\Firefly\Mapper\TransactionMapper;
 use Gared\FireflyImporter\State\StateHandler;
 use InvalidArgumentException;
-use Psr\Log\LoggerAwareInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -24,7 +20,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\HttpClient\HttpClient;
 
 #[AsCommand(name: 'import-transactions')]
 class ImportTransactionsCommand extends Command
@@ -34,7 +29,7 @@ class ImportTransactionsCommand extends Command
         private readonly FinTSFactory $finTsFactory = new FinTSFactory(new FinTSOptionsFactory()),
         private readonly ConfigFileHandlerFactory $configFileHandlerFactory = new ConfigFileHandlerFactory(),
         private readonly AccountLoader $accountLoader = new AccountLoader(),
-        private readonly AccountProcessor $accountProcessor = new AccountProcessor(new TransactionMapper(), new AccountStatementLoader()),
+        private readonly AccountProcessor $accountProcessor = new AccountProcessor(),
     ) {
         parent::__construct();
     }
@@ -69,19 +64,6 @@ class ImportTransactionsCommand extends Command
         $login = $finTs->login();
         $upd = $login->getUpd();
 
-        $httpClient = HttpClient::create([
-            'max_redirects' => 0,
-        ]);
-        if ($httpClient instanceof LoggerAwareInterface) {
-            $httpClient->setLogger(new ConsoleLogger($output));
-        }
-
-        $fireflyClient = new Client(
-            url: $config->fireflyUrl,
-            accessToken: $config->fireflyAccessToken,
-            httpClient: $httpClient,
-        );
-
         if ($upd === null) {
             $io->error('UPD information not found.');
 
@@ -104,7 +86,6 @@ class ImportTransactionsCommand extends Command
             account: $account,
             accountType: $accountType,
             config: $config,
-            fireflyClient: $fireflyClient,
             io: $io,
             dryRun: $input->getOption('dry-run') === true,
         );

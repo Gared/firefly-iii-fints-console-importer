@@ -6,7 +6,7 @@ namespace Gared\FireflyImporter\Firefly\Model;
 
 use Stringable;
 
-class FireflyAccount implements Stringable
+readonly class FireflyAccount implements Stringable
 {
     /**
      * @param numeric-string|null $id
@@ -15,6 +15,7 @@ class FireflyAccount implements Stringable
         public ?string $id = null,
         public ?string $iban = null,
         public ?string $name = null,
+        public ?AccountType $type = null,
         public ?float $currentBalance = null,
     ) {
     }

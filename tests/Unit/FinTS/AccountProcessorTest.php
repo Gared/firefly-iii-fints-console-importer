@@ -10,6 +10,9 @@ use Fhp\Action\GetDepotAufstellung;
 use Fhp\BaseAction;
 use Fhp\FinTs;
 use Fhp\Model\SEPAAccount;
+use Fhp\Model\StatementOfAccount\Statement;
+use Fhp\Model\StatementOfAccount\StatementOfAccount;
+use Fhp\Model\StatementOfAccount\Transaction;
 use Fhp\Model\StatementOfHoldings\StatementOfHoldings;
 use Fhp\Segment\Common\AccountInfo;
 use Fhp\Segment\Common\Sdo;
@@ -20,29 +23,50 @@ use Gared\FireflyImporter\FinTS\AccountProcessor;
 use Gared\FireflyImporter\FinTS\AccountStatementLoader;
 use Gared\FireflyImporter\FinTS\BankAccountType;
 use Gared\FireflyImporter\Firefly\Client;
+use Gared\FireflyImporter\Firefly\ClientFactory;
 use Gared\FireflyImporter\Firefly\Mapper\TransactionMapper;
 use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpClient\MockHttpClient;
 
 class AccountProcessorTest extends TestCase
 {
     public function testSepaAccount(): void
     {
         $accountStatementLoader = $this->createMock(AccountStatementLoader::class);
-        $accountStatementLoader->expects(self::once())->method('getStatementOfAccount');
+        $statement = $this->createStub(Statement::class);
+        $statement->method('getTransactions')
+            ->willReturn([
+                $this->createStub(Transaction::class),
+            ]);
+        $statementOfAccount = $this->createStub(StatementOfAccount::class);
+        $statementOfAccount->method('getStatements')
+            ->willReturn([
+                $statement,
+            ]);
+        $accountStatementLoader
+            ->expects(self::once())
+            ->method('getStatementOfAccount')
+            ->willReturn($statementOfAccount);
+        $fireflyClient = $this->getMockBuilder(Client::class)
+            ->setConstructorArgs(['', '', new MockHttpClient()])
+            ->getMock();
+        $fireflyClient->expects(self::once())->method('getAccounts');
+        $clientFactory = $this->createStub(ClientFactory::class);
+        $clientFactory->method('createFromConfig')->willReturn($fireflyClient);
 
         $processor = new AccountProcessor(
             transactionMapper: $this->createStub(TransactionMapper::class),
             accountStatementLoader: $accountStatementLoader,
+            clientFactory: $clientFactory,
         );
 
         $finTs = $this->createStub(FinTs::class);
 
         $io = $this->createStub(SymfonyStyle::class);
-        $fireflyClient = $this->createStub(Client::class);
 
         $account = new SEPAAccount();
 
@@ -53,7 +77,6 @@ class AccountProcessorTest extends TestCase
             account: $account,
             accountType: BankAccountType::SAVINGS,
             config: $config,
-            fireflyClient: $fireflyClient,
             io: $io,
             dryRun: false,
         );
@@ -64,9 +87,25 @@ class AccountProcessorTest extends TestCase
     {
         $accountStatementLoader = $this->createStub(AccountStatementLoader::class);
 
+        $fireflyClient = $this->getStubBuilder(Client::class)
+            ->setConstructorArgs(['', '', new MockHttpClient()])
+            ->getStub();
+        $fireflyClient->method('getAccounts')
+            ->willReturn([
+                new FireflyAccount(
+                    id: '123',
+                    iban: 'DE1234',
+                    name: 'Test',
+                    currentBalance: 123.1,
+                ),
+            ]);
+        $clientFactory = $this->createStub(ClientFactory::class);
+        $clientFactory->method('createFromConfig')->willReturn($fireflyClient);
+
         $processor = new AccountProcessor(
             transactionMapper: $this->createStub(TransactionMapper::class),
             accountStatementLoader: $accountStatementLoader,
+            clientFactory: $clientFactory,
         );
 
         $balance = $this->createStub(HISAL::class);
@@ -116,7 +155,6 @@ class AccountProcessorTest extends TestCase
             account: $account,
             accountType: $accountType,
             config: $config,
-            fireflyClient: $fireflyClient,
             io: $io,
             dryRun: true,
         );

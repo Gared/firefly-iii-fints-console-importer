@@ -10,7 +10,7 @@ use Gared\FireflyImporter\Firefly\Model\CreateTransactionRequest;
 use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class Client
+readonly class Client
 {
     public function __construct(
         public string $url,
@@ -22,15 +22,18 @@ class Client
     /**
      * @return list<FireflyAccount>
      */
-    public function getAccounts(AccountType $accountType): array
+    public function getAccounts(?AccountType $accountType = null): array
     {
+        $queryParameters = [];
+        if ($accountType !== null) {
+            $queryParameters['type'] = $accountType->value;
+        }
+
         $response = $this->httpClient->request(
             'GET',
             $this->url . '/api/v1/accounts',
             [
-                'query' => [
-                    'type' => $accountType->value,
-                ],
+                'query' => $queryParameters,
                 'headers' => [
                     'Accept' => 'application/json',
                     'Authorization' => 'Bearer ' . $this->accessToken,
@@ -60,6 +63,7 @@ class Client
                     id: $accountData['id'],
                     iban: $accountData['attributes']['iban'],
                     name: $accountData['attributes']['name'],
+                    type: AccountType::tryFrom($accountData['attributes']['type']),
                     currentBalance: (float) $accountData['attributes']['current_balance'],
                 );
             }
@@ -116,6 +120,7 @@ class Client
      *     attributes: array{
      *         iban: string|null,
      *         name: string,
+     *         type: string,
      *         current_balance: numeric,
      *     }
      * } $accountData
@@ -141,6 +146,10 @@ class Client
         }
 
         if (array_key_exists('name', $accountData['attributes']) === false || is_string($accountData['attributes']['name']) === false) {
+            return false;
+        }
+
+        if (array_key_exists('type', $accountData['attributes']) === false || is_string($accountData['attributes']['type']) === false) {
             return false;
         }
 
