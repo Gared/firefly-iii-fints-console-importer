@@ -128,6 +128,9 @@ class AccountProcessorTest extends TestCase
         $reflectionProperty->setValue($action, $value);
     }
 
+    /**
+     * @return array<string, array{0: BankAccountType}>
+     */
     public static function getAccountTypes(): array
     {
         return [
