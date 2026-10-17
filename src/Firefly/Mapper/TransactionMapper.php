@@ -12,13 +12,17 @@ use Fhp\Model\StatementOfAccount\Transaction;
 use Fhp\Segment\SAL\HISAL;
 use Gared\FireflyImporter\Config\Parser\Account;
 use Gared\FireflyImporter\FinTS\StructuredDescriptionCodes;
+use Gared\FireflyImporter\Firefly\Model\AccountType;
 use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
 use Gared\FireflyImporter\Firefly\Model\Transaction as FireflyTransaction;
 use RuntimeException;
 
 class TransactionMapper
 {
-    public function mapFromBankTransaction(Transaction $transaction, Account $account): FireflyTransaction
+    /**
+     * @param list<FireflyAccount> $assetAccounts
+     */
+    public function mapFromBankTransaction(Transaction $transaction, Account $account, array $assetAccounts): FireflyTransaction
     {
         $type = match ($transaction->getCreditDebit()) {
             Transaction::CD_CREDIT => 'deposit',
@@ -26,11 +30,15 @@ class TransactionMapper
             default => throw new Exception('Unknown transaction type: ' . $transaction->getCreditDebit()),
         };
 
-        $sourceAccount = $this->getFireflyAccount($account, $transaction, $type, 'source');
-        $destinationAccount = $this->getFireflyAccount($account, $transaction, $type, 'destination');
+        $sourceAccount = $this->getFireflyAccount($account, $assetAccounts, $transaction, $type, 'source');
+        $destinationAccount = $this->getFireflyAccount($account, $assetAccounts, $transaction, $type, 'destination');
 
         if ($transaction->getBookingDate() === null) {
             throw new RuntimeException('No booking date in transaction set. Unable to forward transaction to firefly');
+        }
+
+        if ($sourceAccount->type === AccountType::Asset && $destinationAccount->type === AccountType::Asset) {
+            $type = 'transfer';
         }
 
         return new FireflyTransaction(
@@ -119,7 +127,10 @@ class TransactionMapper
             if ($holding->getName() === null) {
                 continue;
             }
-            $notes .= mb_trim($holding->getName()) . ': ' . number_format($holding->getAmount() * $holding->getPrice(), 2) . ' ' . $holding->getCurrency() . PHP_EOL;
+            $notes .= mb_trim('|' . $holding->getName()) . '|' . number_format($holding->getAmount() * $holding->getPrice(), 2) . ' ' . $holding->getCurrency() . '|' . PHP_EOL;
+        }
+        if ($notes !== '') {
+            $notes = '|name|balance|' . PHP_EOL . '|-|-|' . PHP_EOL . $notes;
         }
 
         $transactionDate = $statementOfHoldings->getHoldings()[0]->getDate() ?? new DateTime();
@@ -149,7 +160,10 @@ class TransactionMapper
         return $description;
     }
 
-    private function getFireflyAccount(Account $account, Transaction $transaction, string $type, string $accountType): FireflyAccount
+    /**
+     * @param list<FireflyAccount> $assetAccounts
+     */
+    private function getFireflyAccount(Account $account, array $assetAccounts, Transaction $transaction, string $type, string $accountType): FireflyAccount
     {
         if (
             ($accountType === 'source' && $type === 'withdrawal')
@@ -157,7 +171,17 @@ class TransactionMapper
         ) {
             return new FireflyAccount(
                 id: $account->fireflyAccountId,
+                type: AccountType::Asset,
             );
+        }
+
+        foreach ($assetAccounts as $assetAccount) {
+            if ($assetAccount->iban === $transaction->getAccountNumber()) {
+                return new FireflyAccount(
+                    id: $assetAccount->id,
+                    type: AccountType::Asset,
+                );
+            }
         }
 
         return new FireflyAccount(

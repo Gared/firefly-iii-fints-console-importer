@@ -10,13 +10,16 @@ use Fhp\FinTs;
 use Fhp\Model\SEPAAccount;
 use Gared\FireflyImporter\Config\Parser\Config;
 use Gared\FireflyImporter\Firefly\Client;
+use Gared\FireflyImporter\Firefly\ClientFactory;
 use Gared\FireflyImporter\Firefly\Exception\FailedException;
 use Gared\FireflyImporter\Firefly\Mapper\TransactionMapper;
 use Gared\FireflyImporter\Firefly\Model\AccountType;
 use Gared\FireflyImporter\Firefly\Model\CreateTransactionRequest;
 use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
 use Gared\FireflyImporter\Firefly\Model\Transaction;
+use Psr\Log\LoggerAwareInterface;
 use RuntimeException;
+use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 readonly class AccountProcessor
@@ -24,6 +27,7 @@ readonly class AccountProcessor
     public function __construct(
         private TransactionMapper $transactionMapper = new TransactionMapper(),
         private AccountStatementLoader $accountStatementLoader = new AccountStatementLoader(),
+        private ClientFactory $clientFactory = new ClientFactory(),
     ) {
     }
 
@@ -32,10 +36,14 @@ readonly class AccountProcessor
         SEPAAccount $account,
         BankAccountType $accountType,
         Config $config,
-        Client $fireflyClient,
         SymfonyStyle $io,
         bool $dryRun,
     ): void {
+        $fireflyClient = $this->clientFactory->createFromConfig($config);
+        if ($fireflyClient->httpClient instanceof LoggerAwareInterface) {
+            $fireflyClient->httpClient->setLogger(new ConsoleLogger($io));
+        }
+
         $fireflyTransactions = $this->createTransactions($accountType, $io, $finTs, $account, $config, $fireflyClient);
 
         if ($dryRun) {
@@ -78,18 +86,20 @@ readonly class AccountProcessor
             return [$this->handleFund($finTs, $account, $config, $fireflyClient, $io)];
         }
 
-        return $this->handleSepaAccount($finTs, $account, $config, $io);
+        return $this->handleSepaAccount($finTs, $account, $config, $fireflyClient, $io);
     }
 
     /**
      * @return list<Transaction>
      */
-    private function handleSepaAccount(FinTs $finTs, SEPAAccount $account, Config $config, SymfonyStyle $io): array
+    private function handleSepaAccount(FinTs $finTs, SEPAAccount $account, Config $config, Client $fireflyClient, SymfonyStyle $io): array
     {
         $statementAccount = $this->accountStatementLoader->getStatementOfAccount($account, $config, $finTs);
 
         $table = $io->createTable();
         $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
+
+        $assetAccounts = $fireflyClient->getAccounts(AccountType::Asset);
 
         $fireflyTransactions = [];
         foreach ($statementAccount->getStatements() as $statement) {
@@ -103,7 +113,7 @@ readonly class AccountProcessor
                     $transaction->getName(),
                 ]);
 
-                $fireflyTransactions[] = $this->transactionMapper->mapFromBankTransaction($transaction, $config->account);
+                $fireflyTransactions[] = $this->transactionMapper->mapFromBankTransaction($transaction, $config->account, $assetAccounts);
             }
         }
         $table->render();
@@ -176,19 +186,13 @@ readonly class AccountProcessor
             accountType: AccountType::Asset,
         );
 
-        $fireflyAccount = null;
         foreach ($accounts as $account) {
             if ($account->id === $config->account->fireflyAccountId) {
-                $fireflyAccount = $account;
-                break;
+                return $account;
             }
         }
 
-        if ($fireflyAccount === null) {
-            throw new RuntimeException('Firefly account not found. Please review your configuration file');
-        }
-
-        return $fireflyAccount;
+        throw new RuntimeException('Firefly account not found. Please review your configuration file');
     }
 
     private function sendTransaction(Client $fireflyClient, Transaction $transaction, SymfonyStyle $io): bool
