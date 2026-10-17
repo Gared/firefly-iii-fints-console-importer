@@ -1,6 +1,6 @@
-FROM php:8.5.11-cli@sha256:01a109229f4465bc9ef042d9198f09a4d9da7775a825dbd8572dcdbd8756c4d3 AS base
+FROM php:8.5.11-cli AS base
 
-COPY --from=composer/composer:2.10.3-bin@sha256:206a6dc365fd66aac01e2744d8a6bc898108e802b1bcdde1cd782da788bf1db9 /composer /usr/local/bin/composer
+COPY --from=composer:2.10.3 /usr/bin/composer /usr/local/bin/composer
 
 RUN apt-get update && apt-get install -y unzip libicu-dev  \
     && docker-php-ext-configure intl && docker-php-ext-install intl
