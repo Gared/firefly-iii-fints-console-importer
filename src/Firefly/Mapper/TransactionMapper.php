@@ -9,6 +9,7 @@ use DateTimeInterface;
 use Exception;
 use Fhp\Action\GetDepotAufstellung;
 use Fhp\Model\StatementOfAccount\Transaction;
+use Fhp\Segment\SAL\HISAL;
 use Gared\FireflyImporter\Config\Parser\Account;
 use Gared\FireflyImporter\FinTS\StructuredDescriptionCodes;
 use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
@@ -49,6 +50,45 @@ class TransactionMapper
             sepaDb: $transaction->getStructuredDescription()[StructuredDescriptionCodes::Mandatsreferenznummer->value] ?? null,
             sepaCi: $transaction->getStructuredDescription()[StructuredDescriptionCodes::CreditorIdentifier->value] ?? null,
             bookDate: $transaction->getValutaDate()?->format(DateTimeInterface::ATOM),
+        );
+    }
+
+    public function mapFromBankBalance(float $correctionAmount, HISAL $balance, Account $account): FireflyTransaction
+    {
+        $fakeAccount = new FireflyAccount(
+            name: 'Cash account',
+        );
+
+        if ($correctionAmount > 0) {
+            $type = 'deposit';
+            $destinationAccount = new FireflyAccount(
+                id: $account->fireflyAccountId,
+            );
+            $sourceAccount = $fakeAccount;
+        } else {
+            $type = 'withdrawal';
+            $sourceAccount = new FireflyAccount(
+                id: $account->fireflyAccountId,
+            );
+            $destinationAccount = $fakeAccount;
+        }
+
+        $transactionDate = $balance->getBuchungszeitpunkt()?->asDateTime() ?? new DateTime();
+
+        $notes = 'Balance: ' . $balance->getGebuchterSaldo()->getAmount();
+
+        return new FireflyTransaction(
+            type: $type,
+            date: $transactionDate->format(DateTimeInterface::ATOM),
+            amount: (string) $correctionAmount,
+            description: 'Update current balance',
+            sourceId: $sourceAccount->id,
+            sourceName: $sourceAccount->name,
+            sourceIban: $sourceAccount->iban,
+            destinationId: $destinationAccount->id,
+            destinationName: $destinationAccount->name,
+            destinationIban: $destinationAccount->iban,
+            notes: $notes,
         );
     }
 
