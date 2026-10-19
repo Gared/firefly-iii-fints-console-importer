@@ -75,6 +75,7 @@ class TransactionMapper
             $sourceAccount = $fakeAccount;
         } else {
             $type = 'withdrawal';
+            $correctionAmount *= -1;
             $sourceAccount = new FireflyAccount(
                 id: $account->fireflyAccountId,
             );
@@ -114,6 +115,7 @@ class TransactionMapper
             $sourceAccount = $fakeAccount;
         } else {
             $type = 'withdrawal';
+            $correctionAmount *= -1;
             $sourceAccount = new FireflyAccount(
                 id: $account->fireflyAccountId,
             );
