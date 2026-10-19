@@ -19,6 +19,7 @@ use Gared\FireflyImporter\Firefly\Model\FireflyAccount;
 use Gared\FireflyImporter\Firefly\Model\Transaction;
 use Psr\Log\LoggerAwareInterface;
 use RuntimeException;
+use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -96,7 +97,7 @@ readonly class AccountProcessor
     {
         $statementAccount = $this->accountStatementLoader->getStatementOfAccount($account, $config, $finTs);
 
-        $table = $io->createTable();
+        $table = new Table($io);
         $table->setHeaders(['Date', 'Credit/Debit', 'Amount', 'Description', 'Account Number', 'Name']);
 
         $assetAccounts = $fireflyClient->getAccounts(AccountType::Asset);
