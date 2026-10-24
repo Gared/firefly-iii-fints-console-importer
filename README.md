@@ -8,6 +8,7 @@ What does this tool do?
 * Maps and imports the transactions into your Firefly III instance
 * Persists the FinTS session state to avoid unnecessary re-authentication
 * Supports multiple bank accounts via separate configuration files
+* Supports fund accounts and matching of specific asset accounts
 
 ## Requirements
 
@@ -53,7 +54,7 @@ bin/console import-transactions --config data/config/mybank.json
 
 ### Docker
 
-Run the application using the official Docker image:
+Run the application using the official Docker image. This tool also supports ARM64 architecture.
 
 ```bash
 docker run --rm -v data_directory:/app/data/ gared/firefly-iii-fints-console-importer bin/console import-transactions --config data/config/mybank.json
@@ -64,6 +65,28 @@ Or build the image manually:
 ```bash
 docker build -f docker/Dockerfile -t firefly-fints-importer .
 docker run --rm -v $(pwd)/data:/app/data firefly-fints-importer bin/console import-transactions --config data/config/mybank.json
+```
+
+### Docker Compose
+
+Run the application using Docker Compose. You can use a `compose.yml` file like this:
+
+```yaml
+services:
+  app:
+    image: gared/firefly-iii-fints-console-importer
+    volumes:
+      - ./data:/app/data
+    tty: true
+    networks:
+      - firefly_iii
+```
+
+Run the importer:
+
+```bash
+docker compose up -d
+docker compose exec app bin/console import-transactions --config data/config/mybank.json
 ```
 
 ### Clone
@@ -136,5 +159,3 @@ Run code style fixer:
 ```bash
 vendor/bin/php-cs-fixer fix
 ```
-
-
