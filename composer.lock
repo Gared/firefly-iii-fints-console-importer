@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "161c7e3454ec9f28c31d9854100146fd",
+    "content-hash": "2d0313947b482c7d58afb40fff884706",
     "packages": [
         {
-            "name": "nemiah/php-fints",
-            "version": "dev-master",
+            "name": "gared/php-fints",
+            "version": "4.2.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/nemiah/phpFinTS.git",
-                "reference": "dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c"
+                "url": "https://github.com/Gared/phpFinTS.git",
+                "reference": "18b4cd9b16942a1d4f44352d54f78318caff1112"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nemiah/phpFinTS/zipball/dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c",
-                "reference": "dd2a7f2ca017fbe75dbd9f4dff07a554b3dac10c",
+                "url": "https://api.github.com/repos/Gared/phpFinTS/zipball/18b4cd9b16942a1d4f44352d54f78318caff1112",
+                "reference": "18b4cd9b16942a1d4f44352d54f78318caff1112",
                 "shasum": ""
             },
             "require": {
@@ -36,7 +36,6 @@
                 "monolog/monolog": "Allow sending log messages to a variety of different handlers",
                 "nemiah/php-sepa-xml": "dev-master"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -48,12 +47,11 @@
                 "MIT"
             ],
             "description": "PHP Library for the protocols fints and hbci",
-            "homepage": "https://github.com/nemiah/phpFinTS",
             "support": {
-                "issues": "https://github.com/nemiah/phpFinTS/issues",
-                "source": "https://github.com/nemiah/phpFinTS/tree/master"
+                "issues": "https://github.com/Gared/phpFinTS/issues",
+                "source": "https://github.com/Gared/phpFinTS/tree/4.2.0"
             },
-            "time": "2026-09-22T07:10:38+00:00"
+            "time": "2026-10-24T10:34:18+00:00"
         },
         {
             "name": "psr/container",
@@ -4550,9 +4548,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "nemiah/php-fints": 20
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
