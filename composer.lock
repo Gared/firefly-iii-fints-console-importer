@@ -104,7 +104,8 @@
                 "issues": "https://github.com/php-fig/container/issues",
                 "source": "https://github.com/php-fig/container/tree/2.0.2"
             },
-            "time": "2021-11-05T16:47:00+00:00"
+            "time": "2021-11-05T16:47:00+00:00",
+            "published-time": "2021-11-05T16:53:27+00:00"
         },
         {
             "name": "psr/log",
@@ -154,20 +155,21 @@
             "support": {
                 "source": "https://github.com/php-fig/log/tree/3.0.2"
             },
-            "time": "2024-09-11T13:17:53+00:00"
+            "time": "2024-09-11T13:17:53+00:00",
+            "published-time": "2024-09-11T13:21:14+00:00"
         },
         {
             "name": "symfony/console",
-            "version": "v8.1.9",
+            "version": "v8.1.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
-                "reference": "630e74196a2635ec0f06c12bd3fb47cfedf85157"
+                "reference": "5b6d9b127ec27bc6db59bf65e2e37b6fe5b00083"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/console/zipball/630e74196a2635ec0f06c12bd3fb47cfedf85157",
-                "reference": "630e74196a2635ec0f06c12bd3fb47cfedf85157",
+                "url": "https://api.github.com/repos/symfony/console/zipball/5b6d9b127ec27bc6db59bf65e2e37b6fe5b00083",
+                "reference": "5b6d9b127ec27bc6db59bf65e2e37b6fe5b00083",
                 "shasum": ""
             },
             "require": {
@@ -234,7 +236,7 @@
                 "terminal"
             ],
             "support": {
-                "source": "https://github.com/symfony/console/tree/v8.1.9"
+                "source": "https://github.com/symfony/console/tree/v8.1.10"
             },
             "funding": [
                 {
@@ -254,7 +256,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-12T19:11:16+00:00"
+            "time": "2026-10-28T11:16:19+00:00",
+            "published-time": "2026-10-28T18:23:59+00:00"
         },
         {
             "name": "symfony/deprecation-contracts",
@@ -325,20 +328,21 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-05T06:23:12+00:00"
+            "time": "2026-06-05T06:23:12+00:00",
+            "published-time": "2026-06-27T21:46:34+00:00"
         },
         {
             "name": "symfony/http-client",
-            "version": "v8.1.9",
+            "version": "v8.1.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-client.git",
-                "reference": "f892301df77ac25613b19fc2450139c950d1368a"
+                "reference": "1f6bd9bb0dddbbb1b88823e26c6d05fc3ba89219"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/http-client/zipball/f892301df77ac25613b19fc2450139c950d1368a",
-                "reference": "f892301df77ac25613b19fc2450139c950d1368a",
+                "url": "https://api.github.com/repos/symfony/http-client/zipball/1f6bd9bb0dddbbb1b88823e26c6d05fc3ba89219",
+                "reference": "1f6bd9bb0dddbbb1b88823e26c6d05fc3ba89219",
                 "shasum": ""
             },
             "require": {
@@ -402,7 +406,7 @@
                 "http"
             ],
             "support": {
-                "source": "https://github.com/symfony/http-client/tree/v8.1.9"
+                "source": "https://github.com/symfony/http-client/tree/v8.1.10"
             },
             "funding": [
                 {
@@ -422,7 +426,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-13T15:31:40+00:00"
+            "time": "2026-10-26T21:55:04+00:00",
+            "published-time": "2026-10-28T18:24:37+00:00"
         },
         {
             "name": "symfony/http-client-contracts",
@@ -504,7 +509,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-08-04T08:41:16+00:00"
+            "time": "2026-08-04T08:41:16+00:00",
+            "published-time": "2026-08-30T19:56:36+00:00"
         },
         {
             "name": "symfony/service-contracts",
@@ -591,7 +597,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-27T15:39:01+00:00"
+            "time": "2026-07-27T15:39:01+00:00",
+            "published-time": "2026-08-30T19:56:37+00:00"
         },
         {
             "name": "symfony/string",
@@ -681,7 +688,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-03T15:16:03+00:00"
+            "time": "2026-10-03T15:16:03+00:00",
+            "published-time": "2026-10-14T06:48:42+00:00"
         },
         {
             "name": "symfony/translation-contracts",
@@ -763,20 +771,21 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-05T06:23:12+00:00"
+            "time": "2026-06-05T06:23:12+00:00",
+            "published-time": "2026-06-27T21:46:40+00:00"
         },
         {
             "name": "symfony/validator",
-            "version": "v8.1.9",
+            "version": "v8.1.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/validator.git",
-                "reference": "020b0f92a34367a36ffad5956501f971545a3b9b"
+                "reference": "bf9171dc59f33fe84da8a5ca0e75f354194be325"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/validator/zipball/020b0f92a34367a36ffad5956501f971545a3b9b",
-                "reference": "020b0f92a34367a36ffad5956501f971545a3b9b",
+                "url": "https://api.github.com/repos/symfony/validator/zipball/bf9171dc59f33fe84da8a5ca0e75f354194be325",
+                "reference": "bf9171dc59f33fe84da8a5ca0e75f354194be325",
                 "shasum": ""
             },
             "require": {
@@ -840,7 +849,7 @@
             "description": "Provides tools to validate values",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/validator/tree/v8.1.9"
+                "source": "https://github.com/symfony/validator/tree/v8.1.10"
             },
             "funding": [
                 {
@@ -860,7 +869,8 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-13T16:18:12+00:00"
+            "time": "2026-10-27T13:53:09+00:00",
+            "published-time": "2026-10-28T18:23:42+00:00"
         }
     ],
     "packages-dev": [
@@ -4558,5 +4568,5 @@
         "ext-mbstring": "*"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.9.0"
+    "plugin-api-version": "2.11.0"
 }
