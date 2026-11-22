@@ -34,6 +34,7 @@ jobs:
       uses: ramsey/composer-install@v4
 
     - name: Run php-cs-fixer check
+      if: matrix.php-version == '8.5'
       run: vendor/bin/php-cs-fixer check --diff
 
     - name: Run PHPStan
