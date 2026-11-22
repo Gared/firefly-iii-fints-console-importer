@@ -173,7 +173,7 @@ readonly class AccountProcessor
 
         $fireflyAccount = $this->getFireflyAccount($fireflyClient, $config);
 
-        $correctionAmount = abs($getDepotAufstellung->getDepotWert() - $fireflyAccount->currentBalance);
+        $correctionAmount = $getDepotAufstellung->getDepotWert() - $fireflyAccount->currentBalance;
         if ($correctionAmount === 0.0) {
             throw new RuntimeException('No correction needed. The depot value matches the current balance.');
         }
