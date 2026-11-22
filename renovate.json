@@ -7,8 +7,7 @@
     {
       "matchDatasources": ["docker"],
       "matchPackageNames": ["php"],
-      "matchUpdateTypes": ["minor", "major"],
-      "enabled": false
+      "allowedVersions": "8.5.x"
     }
   ]
 }
